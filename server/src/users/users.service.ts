@@ -1,39 +1,38 @@
 import { Injectable } from '@nestjs/common';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 import { User } from './entities/user.entity';
+import { UsersDocument } from 'src/schemas/users.schema';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { CreateUserDto } from './dto/create-user.dto';
 
 @Injectable()
 export class UsersService {
-  private users: Map<number, User> = new Map();
-  private id = 0;
+  constructor(
+    @InjectModel(User.name) private readonly userModel: Model<UsersDocument>,
+  ) {}
 
-  async create(dto: CreateUserDto) {
-    this.users.set(this.id, {
-      id: ++this.id,
-      ...dto,
-      createdAt: new Date(),
-    });
-    return this.users.get(this.id);
+  async create(createUserDto: CreateUserDto): Promise<UsersDocument> {
+    const user = new this.userModel(createUserDto);
+    return user.save();
   }
 
-  findAll() {
-    return Array.from(this.users, (user) => user[1]);
+  async findAll(): Promise<UsersDocument[]> {
+    return this.userModel.find();
   }
 
-  findOne(id: number) {
-    return this.users.get(id);
+  findOne(id: string) {
+    return this.userModel.findById(id);
   }
 
-  update(id: number, updateUserDto: UpdateUserDto) {
-    this.users.set(this.id, {
-      ...this.users.get(id),
-      ...updateUserDto,
-    });
-    return this.users.get(this.id);
+  async update(
+    id: string,
+    updateUserDto: UpdateUserDto,
+  ): Promise<UsersDocument> {
+    return this.userModel.findByIdAndUpdate(id, updateUserDto);
   }
 
-  remove(id: number) {
-    return this.users.delete(id);
+  async remove(id: number) {
+    return this.userModel.findByIdAndRemove(id);
   }
 }
